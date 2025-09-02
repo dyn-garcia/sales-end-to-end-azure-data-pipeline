@@ -16,10 +16,5 @@ The pipeline simulates a real-world **ETL workflow**, where raw transactional da
 ---
 
 ## 🏗️ Architecture Diagram
-```mermaid
-flowchart LR
-    A[PostgreSQL] -->|Ingest with ADF| B[ADLS Raw]
-    B -->|Databricks Notebook| C[Delta Bronze]
-    C -->|Transform & CDC| D[Delta Silver]
-    D -->|Aggregate in Synapse| E[Gold Views]
-    E -->|Consume| F[Power BI]
+<img width="2570" height="565" alt="Untitled Diagram drawio (2)" src="https://github.com/user-attachments/assets/315eee07-0f03-4606-a438-587301587331" />
+
