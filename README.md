@@ -70,13 +70,15 @@ To handle this efficiently, I MERGE snapshots into Bronze with CDF enabled.
 - **Azure Synapse Analytics (SQL)** → Serving analytics-ready views
 - **Power BI** → Data visualization
 
+---
+
 ## 📂 Repository Structure
-sales-raw-to-gold-azure-pipeline/
-│── notebooks/        # Databricks notebooks (Bronze & Silver ETL)
-│── pipelines/        # ADF pipeline JSON exports
-│── sql/              # Synapse SQL scripts (Gold layer views)
-│── images/           # Architecture diagram & dashboard screenshots
-│── README.md
+sales-raw-to-gold-azure-pipeline/  
+│── notebooks/        # Databricks notebooks (Bronze & Silver ETL)  
+│── pipelines/        # ADF pipeline JSON exports  
+│── sql/              # Synapse SQL scripts (Gold layer views)  
+│── images/           # Architecture diagram & dashboard screenshots  
+│── README.md  
 
 ---
 
