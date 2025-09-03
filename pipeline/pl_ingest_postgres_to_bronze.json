@@ -1,0 +1,202 @@
+{
+    "name": "pl_ingest_postgres_to_bronze",
+    "properties": {
+        "activities": [
+            {
+                "name": "GetTables",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "PostgreSqlV2Source",
+                        "query": "SELECT table_schema, table_name\nFROM information_schema.tables\nWHERE table_type='BASE TABLE'\n  AND table_schema NOT IN ('pg_catalog','information_schema')\nORDER BY table_schema, table_name;\n",
+                        "queryTimeout": "02:00:00"
+                    },
+                    "dataset": {
+                        "referenceName": "ds_lookup_postgres",
+                        "type": "DatasetReference"
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "ForEachTable",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "GetTables",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('GetTables').output.value",
+                        "type": "Expression"
+                    },
+                    "isSequential": false,
+                    "activities": [
+                        {
+                            "name": "copy_data_to_raw",
+                            "type": "Copy",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "PostgreSqlV2Source",
+                                    "queryTimeout": "02:00:00"
+                                },
+                                "sink": {
+                                    "type": "DelimitedTextSink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "formatSettings": {
+                                        "type": "DelimitedTextWriteSettings",
+                                        "quoteAllText": true,
+                                        "fileExtension": ".txt"
+                                    }
+                                },
+                                "enableStaging": false,
+                                "translator": {
+                                    "type": "TabularTranslator",
+                                    "typeConversion": true,
+                                    "typeConversionSettings": {
+                                        "allowDataTruncation": true,
+                                        "treatBooleanAsNumber": false
+                                    }
+                                }
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "ds_postgres",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "p_schema": {
+                                            "value": "@item().table_schema",
+                                            "type": "Expression"
+                                        },
+                                        "p_table_name": {
+                                            "value": "@item().table_name",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "ds_csv_raw",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "p_file_name": {
+                                            "value": "@concat(item().table_name, '.csv')",
+                                            "type": "Expression"
+                                        },
+                                        "p_directory": {
+                                            "value": "@concat('ingest_date=', formatDateTime(utcNow(),'yyyy-MM-dd')) ",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "bronze_csv_to_delta",
+                            "type": "DatabricksNotebook",
+                            "dependsOn": [
+                                {
+                                    "activity": "copy_data_to_raw",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "notebookPath": "/Users/garciadazzai_gmail.com#ext#@garciadazzaigmail.onmicrosoft.com/contoso_sales_project/bronze_layer_ingest_delta_cdf",
+                                "baseParameters": {
+                                    "proc_date": {
+                                        "value": "@formatDateTime(utcNow(), 'yyyy-MM-dd')",
+                                        "type": "Expression"
+                                    },
+                                    "entity": {
+                                        "value": "@item().table_name",
+                                        "type": "Expression"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "AzureDatabricks1",
+                                "type": "LinkedServiceReference"
+                            }
+                        },
+                        {
+                            "name": "silver_transform_merge",
+                            "type": "DatabricksNotebook",
+                            "dependsOn": [
+                                {
+                                    "activity": "bronze_csv_to_delta",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "notebookPath": "/Users/garciadazzai_gmail.com#ext#@garciadazzaigmail.onmicrosoft.com/contoso_sales_project/silver_layer_transform_merge",
+                                "baseParameters": {
+                                    "proc_date": {
+                                        "value": "@formatDateTime(utcNow(), 'yyyy-MM-dd')",
+                                        "type": "Expression"
+                                    },
+                                    "entity": {
+                                        "value": "@item().table_name",
+                                        "type": "Expression"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "AzureDatabricks1",
+                                "type": "LinkedServiceReference"
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "annotations": [],
+        "lastPublishTime": "2025-09-01T21:14:01Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}
