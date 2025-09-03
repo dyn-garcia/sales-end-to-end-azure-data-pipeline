@@ -101,4 +101,5 @@ sales-raw-to-gold-azure-pipeline/
 ## 👤 Author
 **Marc Jen Dynver Garcia**  
 💼 Data Engineer | ETL & Data Pipeline Developer | Cloud Engineering (Azure) | SQL | Databricks (PySpark, Delta Lake) | Synapse Analytics | Power BI
+
 🌐 [LinkedIn](https://www.linkedin.com/in/dynvergarcia) | [GitHub](https://github.com/dyn-garcia)
