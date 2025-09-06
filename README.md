@@ -82,7 +82,7 @@ sales-raw-to-gold-azure-pipeline/
 
 ---
 
-- ## 🎯 Key Learnings
+## 🎯 Key Learnings
 - Built an end-to-end Azure Data Engineering pipeline using the Lakehouse pattern.
 - Implemented incremental processing with Delta Lake Change Data Feed.
 - Practiced scalable ingestion using parameterized pipelines in ADF.
